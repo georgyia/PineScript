@@ -1,0 +1,52 @@
+//@version=4
+
+study(title="ADR% - Average Daily Range %", overlay=false)
+Length = input(20, title="length")
+
+dhigh = security(syminfo.tickerid, 'D', high)
+dlow  = security(syminfo.tickerid, 'D', low)
+ADR = 100 * (sma(dhigh/dlow, Length) - 1)
+
+// Calculate average ADR
+avgADR = sma(ADR, Length)
+
+// Plot ADR and average ADR
+plot(ADR, color=color.orange, title="ADR", linewidth=1)
+plot(avgADR, color=color.blue, title="Average ADR", linewidth=1)
+
+// Plot histogram of the difference between ADR and average ADR
+histogram = ADR - avgADR
+plot(histogram, style=plot.style_histogram, color=color.red, title="Difference")
+
+// Calculate and plot EMAs
+ema10 = ema(close, 10)
+ema20 = ema(close, 20)
+ema30 = ema(close, 30)
+
+plot(ema10, color=color.green, title="EMA 10")
+plot(ema20, color=color.purple, title="EMA 20")
+plot(ema30, color=color.aqua, title="EMA 30")
+
+// Calculate TEMA
+ema14 = ema(close, 14)
+dema14 = 2 * ema14 - ema(ema14, 14)
+tema14 = 3 * ema14 - 3 * dema14 + ema(dema14, 14)
+
+// Calculate volatility
+volatility = stdev(close, Length)
+
+// Calculate RSI
+rsi = rsi(close, 14)
+
+// Calculate Bollinger Bands
+middleBand = sma(close, 20)
+upperBand = middleBand + 2 * stdev(close, 20)
+lowerBand = middleBand - 2 * stdev(close, 20)
+
+// Plot Bollinger Bands
+plot(upperBand, color=color.red, title="Upper Bollinger Band")
+plot(lowerBand, color=color.red, title="Lower Bollinger Band")
+
+// Plot buy symbols when EMAs are increasing, ADR is above 10%, and volatility is increasing
+buyCondition = ema10 > ema10[1] and ema20 > ema20[1] and ema30 > ema30[1] and ADR > 10 and volatility > volatility[1] and rsi > 50 and close > lowerBand
+plotshape(series=buyCondition, location=location.belowbar, color=color.green, style=shape.labelup, title="Buy Signal")
