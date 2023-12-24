@@ -2,45 +2,46 @@
 // © georgyia2
 
 //@version=4
-study(title="Enhanced Buy Signal Indicator", overlay=false)
-Length = input(20, title="length")
+study(title="Enhanced Buy Sell Signal Indicator", overlay=true)
 
-dhigh = security(syminfo.tickerid, 'D', high)
-dlow  = security(syminfo.tickerid, 'D', low)
-ADR = 100 * (sma(dhigh/dlow, Length) - 1)
-
-// Calculate average ADR
-avgADR = sma(ADR, Length)
+// Parameterized Inputs
+Length = input(20, title="Length")
+emaLength1 = input(10, title="EMA Length 1")
+emaLength2 = input(20, title="EMA Length 2")
+emaLength3 = input(30, title="EMA Length 3")
+rsiLength = input(14, title="RSI Length")
+macdShortLength = input(12, title="MACD Short Length")
+macdLongLength = input(26, title="MACD Long Length")
+macdSignalSmoothing = input(9, title="MACD Signal Smoothing")
 
 // Calculate and plot EMAs
-ema10 = ema(close, 10)
-ema20 = ema(close, 20)
-ema30 = ema(close, 30)
+ema10 = ema(close, emaLength1)
+ema20 = ema(close, emaLength2)
+ema30 = ema(close, emaLength3)
 
-// Calculate TEMA
-ema14 = ema(close, 14)
-dema14 = 2 * ema14 - ema(ema14, 14)
-tema14 = 3 * ema14 - 3 * dema14 + ema(dema14, 14)
-
-// Calculate volatility
-volatility = stdev(close, Length)
+// Calculate MACD
+[macdLine, signalLine, _] = macd(close, macdShortLength, macdLongLength, macdSignalSmoothing)
 
 // Calculate RSI
-rsi = rsi(close, 14)
+rsi = rsi(close, rsiLength)
 
 // Calculate Bollinger Bands
-middleBand = sma(close, 20)
-upperBand = middleBand + 2 * stdev(close, 20)
-lowerBand = middleBand - 2 * stdev(close, 20)
+middleBand = sma(close, Length)
+upperBand = middleBand + 2 * stdev(close, Length)
+lowerBand = middleBand - 2 * stdev(close, Length)
 
 // Plot Bollinger Bands
 plot(upperBand, color=color.red, title="Upper Bollinger Band")
 plot(lowerBand, color=color.blue, title="Lower Bollinger Band")
 
-// Plot buy symbols when EMAs are increasing, ADR is above 10%, and volatility is increasing
-buyCondition = ema10 > ema10[1] and ema20 > ema20[1] and ema30 > ema30[1] and ADR > 10 and volatility > volatility[1] and rsi > 50 and close > lowerBand
+// Plot buy signals
+buyCondition = ema10 > ema10[1] and ema20 > ema20[1] and ema30 > ema30[1] and rsi > 50 and close > lowerBand and macdLine > signalLine
 plotshape(series=buyCondition, location=location.belowbar, color=color.green, style=shape.labelup, title="Buy Signal")
 
-// Improved buy condition: EMAs are increasing, ADR is above its average, volatility is increasing, RSI is above 50, and price is above the lower Bollinger Band
-improvedBuyCondition = ema10 > ema10[1] and ema20 > ema20[1] and ema30 > ema30[1] and ADR > avgADR and volatility > volatility[1] and rsi > 50 and close > lowerBand
-plotshape(series=improvedBuyCondition, location=location.belowbar, color=color.blue, style=shape.labelup, title="Improved Buy Signal")
+// Plot sell signals
+sellCondition = ema10 < ema10[1] and ema20 < ema20[1] and ema30 < ema30[1] and rsi < 50 and close < upperBand and macdLine < signalLine
+plotshape(series=sellCondition, location=location.abovebar, color=color.red, style=shape.labeldown, title="Sell Signal")
+
+// Alerts
+alertcondition(buyCondition, title='Buy Alert', message='Buy Signal Generated')
+alertcondition(sellCondition, title='Sell Alert', message='Sell Signal Generated')
